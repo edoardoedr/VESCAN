@@ -1,0 +1,34 @@
+LabelValue,Name,Color_R,Color_G,Color_B,Color_A
+0,Unclassified,200,200,200,0
+1,Trachea,30,55,18,255
+2,Right main bronchus,35,100,30,255
+3,Left main bronchus,95,110,22,255
+4,Right upper lobe bronchus,40,140,45,255
+5,Right middle lobe bronchus,55,180,60,255
+6,Right lower lobe bronchus,110,220,95,255
+7,Left lower lobe bronchus,155,175,30,255
+8,Left upper lobe bronchus,210,230,85,255
+9,Multilobar bronchus,212,255,0,255
+10,Pulmonary trunk,10,25,80,255
+11,Right pulmonary artery,20,60,140,255
+12,Left pulmonary artery,55,35,150,255
+13,Right upper lobe artery,25,110,210,255
+14,Right middle lobe artery,40,165,240,255
+15,Right lower lobe artery,90,210,250,255
+16,Left lower lobe artery,90,60,200,255
+17,Left upper lobe artery,130,100,245,255
+18,Multilobar artery,255,255,0,255
+21,Right pulmonary venous trunk,110,10,25,255
+22,Left pulmonary venous trunk,120,15,60,255
+23,Right upper lobe vein,200,20,40,255
+24,Right middle lobe vein,240,70,60,255
+25,Right lower lobe vein,255,130,115,255
+26,Left lower lobe vein,200,30,110,255
+27,Left upper lobe vein,250,115,175,255
+28,Multilobar vein,255,187,0,255
+73,Multilobar bronchus - interlobar,212,255,0,255
+74,Multilobar bronchus - translobar,255,0,110,255
+75,Multilobar artery - interlobar,255,255,0,255
+76,Multilobar artery - translobar,255,0,0,255
+77,Multilobar vein - interlobar,255,187,0,255
+78,Multilobar vein - translobar,0,255,180,255

@@ -1,0 +1,9 @@
+LabelValue,Name,Color_R,Color_G,Color_B,Color_A
+0,Unclassified (disconnected fragment),200,200,200,0
+1,Right upper lobe,255,127,80,255
+2,Right middle lobe,255,215,0,255
+3,Right lower lobe,50,205,50,255
+4,Left lower lobe,30,144,255,255
+5,Left upper lobe,148,0,211,255
+6,Trunk (outside every lobe),190,190,190,255
+7,Crossing (touches more than one lobe),255,0,0,255

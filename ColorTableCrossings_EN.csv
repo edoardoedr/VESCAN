@@ -1,0 +1,5 @@
+LabelValue,Name,Color_R,Color_G,Color_B,Color_A
+0,Not a crossing vessel,200,200,200,0
+1,Interlobar (runs along the fissure),255,215,0,255
+2,Translobar (transects the fissure),220,20,60,255
+3,Unclassified (no fissure piercing found),130,130,130,255

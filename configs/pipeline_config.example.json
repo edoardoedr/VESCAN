@@ -1,0 +1,120 @@
+{
+  "experiment_name": "default",
+  "notes": "Copy this file (e.g. to pipeline_config.json or experiments/my_experiment.json), edit whatever you need, then run: python3 main.py path/to/your_config.json - that is the entire CLI, everything (single patient vs batch, which structures, every tuning parameter) comes from this file. batch.enabled picks the mode: false processes ONE patient (patients_root_dir/surfaces_root_dir/results_root_dir are that patient's own folders directly); true processes EVERY subfolder of patients_root_dir (one per patient), up to parallel_jobs at a time. Segmentation -> surface conversion is controlled by pipeline.stages.convert/pipeline.convert.* alone (same knob either way) - it's idempotent, so in batch mode it safely runs once per structure per patient without re-converting what's already there. Every value below is optional - delete a key (or set it to null) to fall back to its own built-in default instead of overriding it. See vescan/config.py for the full list of recognized keys.",
+
+  "conda_env": "vescan",
+
+  "batch": {
+    "enabled": true,
+    "patients_root_dir": "Dataset_Folder/segmentations",
+    "surfaces_root_dir": "Dataset_Folder/surfaces",
+    "results_root_dir": "Dataset_Folder/centerlines",
+    "parallel_jobs": 3,
+    "structures": {
+      "artery": { "enabled": true, "segmentation_name": "lung_arteries" },
+      "veins": { "enabled": true, "segmentation_name": "lung_veins" },
+      "airways": { "enabled": true, "segmentation_name": "lung_airways" }
+    }
+  },
+
+  "pipeline": {
+    "stages": {
+      "convert": true,
+      "build_lobe_segments": true,
+      "preprocess": true,
+      "endpoints": true,
+      "network": true,
+      "centerline": true,
+      "build_graph": true,
+      "cut_graph": true,
+      "clip_vessel": true,
+      "label_branches": true,
+      "lobe_reachability": true,
+      "anatomical_segments": true,
+      "statistics": true
+    },
+    "build_lobe_segments": {
+      "extract_fissures": true,
+      "fissure_contact_tolerance": 1.0,
+      "min_fissure_component_area": 50.0,
+      "min_fissure_area": 100.0,
+      "enabled_lobes": ["RUL","RML","RLL","LLL","LUL"]
+    },
+    "convert": {
+      "segmentation_dir": null,
+      "segmentation_name": null,
+      "output_dir": null,
+      "exclude_files": ["total_seg.nii.gz"],
+      "method": "flying-edges",
+      "decimation": 0.0,
+      "smoothing": 0.5,
+      "compute_normals": true,
+      "surfacenets_internal_smoothing": false,
+      "coordinate_space": "LPS",
+      "format": "vtk",
+      "include_airway_wall": true,
+      "airway_wall_suffix": "_wall"
+    },
+    "preprocess": {
+      "target_points": 5000,
+      "decimation_aggressiveness": 4.0,
+      "subdivide": false,
+      "no_decimate": false,
+      "keep_all_components": false
+    },
+    "endpoints": {
+      "start_point": null,
+      "coordinate_system": "LPS",
+      "preprocess": false,
+      "keep_all_components": false,
+      "flip_input_lps_to_ras": null,
+      "endpoint_distance_radius_factor": 1.5,
+      "min_healthy_network_bbox_coverage": 0.9,
+      "network_advancement_ratio": 1.05
+    },
+    "network": {
+      "no_geometry": false,
+      "advancement_ratio": 1.05
+    },
+    "centerline": {
+      "curve_sampling_distance": 1.0,
+      "save_voronoi": true,
+      "save_centerline_curve_model": false,
+      "simplify_voronoi": false,
+      "resample_before_split": 1.0,
+      "delaunay_tolerance": 0.001,
+      "max_centerline_outside_fraction": 0.25,
+      "warn_centerline_outside_fraction": 0.10
+    },
+    "build_graph": {
+      "min_branch_length": 1.0,
+      "use_cached_split": false,
+      "cached_split_file": null,
+      "add_virtual_root_for_veins": true,
+      "orphan_root_repair_tolerance": 0.5,
+      "virtual_root_min_length_fraction": 0.1
+    },
+    "cut_graph": {
+      "max_generations": 5
+    },
+    "clip_vessel": {
+      "cap": true,
+      "add_flow_extensions": false,
+      "extension_length": 1.0,
+      "extension_mode": "boundarynormal"
+    },
+    "label_branches": {
+      "arrays": "GroupId,IsBifurcation,Generation,CellId,Length,AverageRadius",
+      "max_island_area_fraction": 0.0025
+    },
+    "lobe_reachability": {
+      "containment_threshold": 0.1,
+      "containment_tolerance": 0.0001,
+      "extract_lobe_centerlines": false
+    },
+    "anatomical_segments": {
+      "min_piercings_for_interlobar": 2,
+      "interlobar_max_median_angle_deg": 30.0
+    }
+  }
+}

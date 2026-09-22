@@ -1,0 +1,24 @@
+LabelValue,Name,Color_R,Color_G,Color_B,Color_A
+0,Not a fissure,200,200,200,0
+30,Right upper lobe vein segment,200,20,40,255
+31,Right middle lobe vein segment,240,70,60,255
+32,Right lower lobe vein segment,255,130,115,255
+33,Left lower lobe vein segment,200,30,110,255
+34,Left upper lobe vein segment,250,115,175,255
+40,Right upper lobe artery segment,25,110,210,255
+41,Right middle lobe artery segment,40,165,240,255
+42,Right lower lobe artery segment,90,210,250,255
+43,Left lower lobe artery segment,90,60,200,255
+44,Left upper lobe artery segment,130,100,245,255
+50,Right upper lobe bronchus segment,40,140,45,255
+51,Right middle lobe bronchus segment,55,180,60,255
+52,Right lower lobe bronchus segment,110,220,95,255
+53,Left lower lobe bronchus segment,155,175,30,255
+54,Left upper lobe bronchus segment,210,230,85,255
+60,Right horizontal fissure (RUL|RML) - R-HIF,0,206,209,255
+61,Right oblique fissure - upper part (RUL|RLL) - R-UOIF,255,140,0,255
+62,Right oblique fissure - lower part (RML|RLL) - R-LOIF,255,200,110,255
+63,Left oblique fissure (LUL|LLL) - L-major,220,20,180,255
+70,Right horizontal fissure - R-HIF,0,206,209,255
+71,Right oblique fissure,255,140,0,255
+72,Left oblique fissure - L-major,220,20,180,255

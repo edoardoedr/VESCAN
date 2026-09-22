@@ -1,0 +1,13 @@
+Data/*
+Outputs/*
+.claude
+__pycache__/
+.DS_Store
+
+# Reference clones of upstream repos - not part of this project's own code
+vmtk/
+SlicerExtension-VMTK/
+
+# VMTK CMake build directory
+vmtk-build-dir/
+analisys/*
