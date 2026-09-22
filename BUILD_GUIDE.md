@@ -1,35 +1,35 @@
-# Guida: build di VMTK con VTK 9.5.2 / ITK 5.4.6 (conda, standalone)
+# Guide: building VMTK with VTK 9.5.2 / ITK 5.4.6 (conda, standalone)
 
-Guida passo-passo, verificata end-to-end su macOS (osx-arm64), per compilare VMTK
-standalone (non dentro Slicer) contro VTK 9.5.2 e ITK 5.4.6 installati via
-conda-forge, con wrapping Python funzionante.
+Step-by-step guide, verified end-to-end on macOS (osx-arm64), for compiling VMTK
+standalone (not inside Slicer) against VTK 9.5.2 and ITK 5.4.6 installed via
+conda-forge, with working Python wrapping.
 
-Ogni comando qui sotto è stato effettivamente eseguito e verificato in una sessione
-di build reale — inclusi i tre problemi trovati lungo il percorso (vedi sezione
-"Note e problemi noti" in fondo).
+Every command below was actually run and verified in a real build session —
+including the three issues found along the way (see "Notes and known issues"
+section at the bottom).
 
-## 0. Prerequisiti
+## 0. Prerequisites
 
-- conda/miniconda installato (`conda --version`)
+- conda/miniconda installed (`conda --version`)
 - Xcode Command Line Tools (macOS): `xcode-select --install`
 - git
 
-## 1. Creare l'ambiente conda
+## 1. Create the conda environment
 
 ```bash
 conda create -n vescan python=3.11 -y
 conda activate vescan
 ```
 
-> Nota: la versione di Python deve avere un build disponibile su conda-forge per
-> la versione di VTK/ITK scelta. Verifica con:
+> Note: the Python version must have a build available on conda-forge for
+> the chosen VTK/ITK version. Check with:
 > `conda search -c conda-forge "vtk=9.5.2" | grep py311`
 
-## 2. Installare VTK, ITK e il toolchain da conda-forge
+## 2. Install VTK, ITK, and the toolchain from conda-forge
 
-**Importante**: usare conda-forge, non pip. I wheel PyPI di `vtk`/`itk` sono
-runtime-only (nessun header, nessun file `*Config.cmake`) e non permettono di
-compilare codice C++ come `vtkVmtk` contro di essi.
+**Important**: use conda-forge, not pip. The PyPI wheels for `vtk`/`itk` are
+runtime-only (no headers, no `*Config.cmake` files) and don't allow compiling
+C++ code such as `vtkVmtk` against them.
 
 ```bash
 conda install -n vescan -c conda-forge \
@@ -39,11 +39,12 @@ conda install -n vescan -c conda-forge \
   cmake compilers -y
 ```
 
-- `vtk` (conda-forge) include già header + `vtk-config.cmake`.
-- `itk` (conda-forge) è **runtime-only**, come i wheel pip: serve in aggiunta il
-  pacchetto separato `libitk-devel`, che fornisce `ITKConfig.cmake` e gli header.
+- `vtk` (conda-forge) already includes headers + `vtk-config.cmake`.
+- `itk` (conda-forge) is **runtime-only**, just like the pip wheels: you also
+  need the separate `libitk-devel` package, which provides `ITKConfig.cmake`
+  and the headers.
 
-### Verifica che find_package() funzioni
+### Verify that find_package() works
 
 ```bash
 conda activate vescan
@@ -59,18 +60,18 @@ cmake -S /tmp/cmake-probe -B /tmp/cmake-probe/build
 rm -rf /tmp/cmake-probe
 ```
 
-Output atteso: `VTK_VERSION=9.5.2` e `ITK_VERSION=5.4.6`, nessun errore.
+Expected output: `VTK_VERSION=9.5.2` and `ITK_VERSION=5.4.6`, no errors.
 
-## 3. Clonare VMTK
+## 3. Clone VMTK
 
 ```bash
 cd /path/to/vmtk_building
 git clone https://github.com/vmtk/vmtk.git
 ```
 
-(se la cartella `vmtk/` esiste già, salta questo passo)
+(if the `vmtk/` folder already exists, skip this step)
 
-## 4. Configurare la build
+## 4. Configure the build
 
 ```bash
 conda activate vescan
@@ -87,38 +88,37 @@ cmake -S vmtk -B vmtk-build-dir \
   -DCMAKE_BUILD_TYPE=Release
 ```
 
-Spiegazione dei flag non ovvi (vedi anche sezione note in fondo):
+Explanation of the non-obvious flags (see also the notes section at the bottom):
 
-| Flag | Perché serve |
+| Flag | Why it's needed |
 |---|---|
-| `VMTK_USE_SUPERBUILD=OFF` | Salta lo scaricamento/compilazione automatica di VTK/ITK da sorgente: li abbiamo già da conda-forge. |
-| `Python3_EXECUTABLE`, `Python3_ROOT_DIR`, `Python3_FIND_STRATEGY=LOCATION` | Senza questi, `find_package(Python3)` sceglie la versione Python più alta trovata sul sistema (es. quella dell'env conda `base`) invece di quella dell'env attivo, rompendo l'ABI del wrapping Python. |
-| `VMTK_PYTHON_VERSION=python3.11` | Bypassa un bug: `find_package(Python3 COMPONENTS Interpreter)` nel `CMakeLists.txt` di VMTK non popola le variabili legacy (`PYTHON_VERSION_MAJOR`/`MINOR`) da cui questa opzione viene derivata di default. |
-| `BUILD_SHARED_LIBS=ON` | Senza, il wrapping Python di vtkVmtk viene **silenziosamente disattivato** (il macro `vtkMacroKitPythonWrap` richiede `BUILD_SHARED_LIBS=ON`), e nel percorso non-superbuild questa opzione non ha un default sensato. |
+| `VMTK_USE_SUPERBUILD=OFF` | Skips automatically downloading/building VTK/ITK from source: we already have them from conda-forge. |
+| `Python3_EXECUTABLE`, `Python3_ROOT_DIR`, `Python3_FIND_STRATEGY=LOCATION` | Without these, `find_package(Python3)` picks the highest Python version found on the system (e.g. the conda `base` env's) instead of the active env's, breaking the Python wrapping's ABI. |
+| `VMTK_PYTHON_VERSION=python3.11` | Works around a bug: `find_package(Python3 COMPONENTS Interpreter)` in VMTK's `CMakeLists.txt` doesn't populate the legacy variables (`PYTHON_VERSION_MAJOR`/`MINOR`) that this option is derived from by default. |
+| `BUILD_SHARED_LIBS=ON` | Without it, vtkVmtk's Python wrapping is **silently disabled** (the `vtkMacroKitPythonWrap` macro requires `BUILD_SHARED_LIBS=ON`), and in the non-superbuild path this option has no sensible default. |
 
-## 5. Compilare
+## 5. Build
 
 ```bash
 LIBRARY_PATH=$CONDA_PREFIX/lib cmake --build vmtk-build-dir -j$(sysctl -n hw.ncpu)
 ```
 
-> `LIBRARY_PATH=$CONDA_PREFIX/lib` è **necessario su macOS**: il file
-> `vtkVmtk/CMakeLists.txt` di VMTK sovrascrive incondizionatamente
-> `CMAKE_SHARED_LINKER_FLAGS`/`CMAKE_EXE_LINKER_FLAGS` con un vecchio workaround
-> OpenGL/X11, cancellando il percorso di ricerca verso le librerie dell'env conda.
-> Questo causa un errore di link (`library not found for -lfftw3_threads`,
-> dipendenza di ITK) se non lo si aggira così. `LIBRARY_PATH` è letto
-> direttamente dal compilatore/linker, non passa dalle flag CMake che vengono
-> sovrascritte.
+> `LIBRARY_PATH=$CONDA_PREFIX/lib` is **required on macOS**: VMTK's
+> `vtkVmtk/CMakeLists.txt` unconditionally overwrites
+> `CMAKE_SHARED_LINKER_FLAGS`/`CMAKE_EXE_LINKER_FLAGS` with an old OpenGL/X11
+> workaround, wiping out the search path to the conda env's libraries.
+> This causes a link error (`library not found for -lfftw3_threads`, an ITK
+> dependency) unless worked around this way. `LIBRARY_PATH` is read directly
+> by the compiler/linker, bypassing the CMake flags that get overwritten.
 
-Su Linux questo problema non si presenta (il blocco che sovrascrive i flag è
-`if(APPLE)`), quindi `LIBRARY_PATH=...` non dovrebbe essere necessario — ma non è
-stato verificato in questa sessione.
+This issue doesn't occur on Linux (the block that overwrites the flags is
+guarded by `if(APPLE)`), so `LIBRARY_PATH=...` shouldn't be necessary there —
+but this hasn't been verified in this session.
 
-## 6. Verifica rapida dal build tree (opzionale)
+## 6. Quick check from the build tree (optional)
 
-Per un test veloce, prima ancora di installare, si può importare direttamente
-dal build tree:
+For a quick test, even before installing, you can import directly from the
+build tree:
 
 ```bash
 conda activate vescan
@@ -129,46 +129,48 @@ print('OK:', vtkvmtkCommonPython.vtkvmtkMath())
 "
 ```
 
-> `PYTHONPATH` è necessario perché i moduli compilati (`vtkvmtkCommonPython.so`,
-> ecc.) vivono in `vmtk-build-dir/vtkVmtk/bin/` e non sono mai stati installati
-> in `site-packages`. **Non serve invece `DYLD_LIBRARY_PATH`**: CMake incorpora
-> già nei `.so` gli `LC_RPATH` verso `$CONDA_PREFIX/lib` e verso la build-tree
-> stessa (comportamento di default per i binari in build-tree), quindi il
-> dynamic linker trova da solo le librerie VTK/ITK/vtkvmtk — verificabile con
+> `PYTHONPATH` is needed because the compiled modules (`vtkvmtkCommonPython.so`,
+> etc.) live in `vmtk-build-dir/vtkVmtk/bin/` and were never installed into
+> `site-packages`. **`DYLD_LIBRARY_PATH` is not needed**, though: CMake already
+> embeds `LC_RPATH` entries pointing to `$CONDA_PREFIX/lib` and to the build
+> tree itself into the `.so` files (the default behavior for build-tree
+> binaries), so the dynamic linker finds the VTK/ITK/vtkvmtk libraries on its
+> own — verifiable with
 > `otool -l vmtk-build-dir/vtkVmtk/bin/vtkvmtkCommonPython.so | grep -A2 LC_RPATH`.
 
-Nota: `import vtkvmtkCommonPython` diretto funziona solo qui, dal build tree
-flat. **Non è il modo in cui VMTK va usato normalmente** — vedi step 7 e 8.
+Note: importing `vtkvmtkCommonPython` directly only works here, from the flat
+build tree. **This is not how VMTK is meant to be used normally** — see steps
+7 and 8.
 
-## 7. Installare (necessario per un uso reale, non solo di test)
+## 7. Install (required for actual use, not just testing)
 
-**Non usare `cmake --install vmtk-build-dir` senza argomenti**: il progetto usa
-path relativi (es. `lib/python3.11/site-packages/vmtk`) risolti rispetto a
-`CMAKE_INSTALL_PREFIX`, che di default è `/usr/local` — una directory di
-sistema che richiede `sudo` e che comunque non è dove il Python dell'env conda
-cerca i pacchetti. Installa invece dentro l'env conda stesso:
+**Don't run `cmake --install vmtk-build-dir` with no arguments**: the project
+uses relative paths (e.g. `lib/python3.11/site-packages/vmtk`) resolved
+against `CMAKE_INSTALL_PREFIX`, which defaults to `/usr/local` — a system
+directory that requires `sudo` and, regardless, isn't where the conda env's
+Python looks for packages. Install into the conda env itself instead:
 
 ```bash
 conda activate vescan
 cmake --install vmtk-build-dir --prefix "$CONDA_PREFIX"
 ```
 
-Così:
-- gli eseguibili (`vmtk`, `vmtksurfaceviewer`, ecc.) finiscono in
-  `$CONDA_PREFIX/bin`, già nel `PATH` quando l'env è attivo;
-- il pacchetto Python `vmtk` (script `.py` + moduli compilati
-  `vtkvmtk*Python.so`) finisce in
-  `$CONDA_PREFIX/lib/python3.11/site-packages/vmtk`, già su `sys.path`.
+This way:
+- the executables (`vmtk`, `vmtksurfaceviewer`, etc.) end up in
+  `$CONDA_PREFIX/bin`, already on `PATH` when the env is active;
+- the `vmtk` Python package (`.py` scripts + compiled `vtkvmtk*Python.so`
+  modules) ends up in `$CONDA_PREFIX/lib/python3.11/site-packages/vmtk`,
+  already on `sys.path`.
 
-Nessuna variabile d'ambiente da impostare a mano dopo questo passo.
+No environment variables need to be set by hand after this step.
 
-## 8. Uso corretto dopo l'installazione
+## 8. Correct usage after installation
 
-Gli script di VMTK **non** importano i moduli `vtkvmtk*Python` direttamente:
-usano il modulo aggregatore `vmtk/vtkvmtk.py` (installato dentro il pacchetto),
-che fa import relativi (`from .vtkvmtkCommonPython import *`) perché i `.so`
-vivono nella stessa directory. Il modo corretto di usare la libreria da Python
-è quindi:
+VMTK's scripts do **not** import the `vtkvmtk*Python` modules directly: they
+use the aggregator module `vmtk/vtkvmtk.py` (installed inside the package),
+which does relative imports (`from .vtkvmtkCommonPython import *`) because the
+`.so` files live in the same directory. The correct way to use the library
+from Python is therefore:
 
 ```bash
 conda activate vescan
@@ -178,7 +180,7 @@ print(vtkvmtk.vtkvmtkMath())
 "
 ```
 
-oppure, per un intero script vmtk:
+or, for a full vmtk script:
 
 ```bash
 vmtksurfaceviewer --help
@@ -186,63 +188,62 @@ vmtksurfaceviewer --help
 
 ---
 
-## Note e problemi noti (non ovvi, trovati durante la build reale)
+## Notes and known issues (non-obvious, found during the real build)
 
-1. **Wheel PyPI insufficienti**: `pip install vtk itk` installa pacchetti
-   runtime-only senza header né file CMake — inutilizzabili per compilare
-   `vtkVmtk`. Usare sempre conda-forge per lo sviluppo C++.
+1. **PyPI wheels are insufficient**: `pip install vtk itk` installs
+   runtime-only packages with no headers or CMake files — unusable for
+   compiling `vtkVmtk`. Always use conda-forge for C++ development.
 
-2. **`itk` (conda-forge) da solo non basta**: serve il pacchetto separato
-   `libitk-devel` per avere `ITKConfig.cmake` e gli header C++.
+2. **`itk` (conda-forge) alone isn't enough**: you also need the separate
+   `libitk-devel` package to get `ITKConfig.cmake` and the C++ headers.
 
-3. **`find_package(Python3)` non deterministico**: CMake, di default, sceglie
-   la versione Python più alta trovata sul sistema (strategia `VERSION`), non
-   necessariamente quella dell'ambiente conda attivo. Va vincolato
-   esplicitamente.
+3. **`find_package(Python3)` is non-deterministic**: by default, CMake picks
+   the highest Python version found on the system (the `VERSION` strategy),
+   not necessarily the active conda environment's. It must be constrained
+   explicitly.
 
-4. **`BUILD_SHARED_LIBS` non ha un default nel percorso standalone**: nel
-   `CMakeLists.txt` di VMTK, l'opzione `BUILD_SHARED_LIBS=ON` viene impostata
-   esplicitamente solo dentro il ramo `VMTK_USE_SUPERBUILD=ON`
-   (`CMakeLists.txt:171`). Nel percorso standalone (`VMTK_USE_SUPERBUILD=OFF`,
-   quello usato in questa guida) bisogna specificarla a mano, altrimenti
-   defaulta a `OFF` e il wrapping Python viene disattivato senza errori
-   visibili.
+4. **`BUILD_SHARED_LIBS` has no default in the standalone path**: in VMTK's
+   `CMakeLists.txt`, the `BUILD_SHARED_LIBS=ON` option is only set explicitly
+   inside the `VMTK_USE_SUPERBUILD=ON` branch (`CMakeLists.txt:171`). In the
+   standalone path (`VMTK_USE_SUPERBUILD=OFF`, the one used in this guide) it
+   must be specified by hand, otherwise it defaults to `OFF` and the Python
+   wrapping is silently disabled with no visible error.
 
-5. **Override dei linker flag su macOS**: `vtkVmtk/CMakeLists.txt:40-43`
-   sovrascrive incondizionatamente `CMAKE_SHARED_LINKER_FLAGS` /
-   `CMAKE_EXE_LINKER_FLAGS` con un workaround OpenGL/X11 legacy, cancellando
-   qualunque `-L` impostato dall'ambiente (es. da conda-forge via `LDFLAGS`).
-   Causa un errore di link su `fftw3_threads` (dipendenza di ITK) a meno di
-   usare `LIBRARY_PATH` come nella guida.
+5. **Linker flag override on macOS**: `vtkVmtk/CMakeLists.txt:40-43`
+   unconditionally overwrites `CMAKE_SHARED_LINKER_FLAGS` /
+   `CMAKE_EXE_LINKER_FLAGS` with a legacy OpenGL/X11 workaround, wiping out
+   any `-L` set by the environment (e.g. by conda-forge via `LDFLAGS`).
+   This causes a link error on `fftw3_threads` (an ITK dependency) unless you
+   use `LIBRARY_PATH` as shown in this guide.
 
-6. **Stream tracer disattivato automaticamente**: con VTK ≥ 9.2 (quindi anche
-   con 9.5.2), `VTK_VMTK_BUILD_STREAMTRACER` viene disattivato di default
-   (`vtkVmtk/CMakeLists.txt:47-53`) perché VMTK non è più compatibile con il
-   rework dei campi di velocità interpolati introdotto in quella versione di
-   VTK. Non è un errore, è previsto.
+6. **Stream tracer automatically disabled**: with VTK ≥ 9.2 (including 9.5.2),
+   `VTK_VMTK_BUILD_STREAMTRACER` is disabled by default
+   (`vtkVmtk/CMakeLists.txt:47-53`) because VMTK is no longer compatible with
+   the rework of interpolated velocity fields introduced in that VTK version.
+   This isn't a bug — it's expected.
 
-7. **`cmake --install` senza `--prefix` scrive in `/usr/local`**: VMTK usa
-   path relativi (`lib/${VMTK_PYTHON_VERSION}/site-packages/vmtk`) risolti
-   contro `CMAKE_INSTALL_PREFIX`, che di default è `/usr/local` — richiede
-   `sudo` e comunque non è dove il Python dell'env conda cerca i pacchetti.
-   Va sempre specificato `--prefix "$CONDA_PREFIX"` (o equivalente
-   `-DCMAKE_INSTALL_PREFIX=...` in fase di configure).
+7. **`cmake --install` without `--prefix` writes to `/usr/local`**: VMTK uses
+   relative paths (`lib/${VMTK_PYTHON_VERSION}/site-packages/vmtk`) resolved
+   against `CMAKE_INSTALL_PREFIX`, which defaults to `/usr/local` — requiring
+   `sudo` and, regardless, not where the conda env's Python looks for
+   packages. Always specify `--prefix "$CONDA_PREFIX"` (or the equivalent
+   `-DCMAKE_INSTALL_PREFIX=...` at configure time).
 
-8. **`import vtkvmtkCommonPython` diretto non è l'uso previsto**: i moduli
-   compilati vanno importati tramite il modulo aggregatore
-   `vmtk/vtkvmtk.py` (`from vmtk import vtkvmtk`), che usa import relativi
-   (`from .vtkvmtkCommonPython import *`) assumendo che i `.so` stiano nella
-   stessa directory del pacchetto `vmtk` — cosa vera solo dopo un install
-   corretto (punto 7), non nel build tree grezzo.
+8. **Directly importing `vtkvmtkCommonPython` is not the intended usage**:
+   the compiled modules should be imported through the aggregator module
+   `vmtk/vtkvmtk.py` (`from vmtk import vtkvmtk`), which uses relative imports
+   (`from .vtkvmtkCommonPython import *`) assuming the `.so` files sit in the
+   same directory as the `vmtk` package — true only after a proper install
+   (point 7), not in the raw build tree.
 
-## Versioni verificate in questa guida
+## Versions verified in this guide
 
-| Componente | Versione |
+| Component | Version |
 |---|---|
 | VMTK | commit `ba7cf0f` ("Adapted to build against VTK 9.6") |
 | VTK | 9.5.2 (conda-forge) |
 | ITK | 5.4.6 (conda-forge, + `libitk-devel` 5.4.6) |
 | Python | 3.11.14 |
 | CMake | via conda-forge `cmake` package |
-| Compilatore | Clang 19.1.7 (conda-forge `compilers`) |
-| Piattaforma | macOS osx-arm64 |
+| Compiler | Clang 19.1.7 (conda-forge `compilers`) |
+| Platform | macOS osx-arm64 |
